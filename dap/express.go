@@ -1,7 +1,7 @@
 package dap
 
 type Express interface {
-	Eval() Object
+	Eval(s Scope) Object
 }
 
 type ExprAdd struct {
@@ -9,7 +9,7 @@ type ExprAdd struct {
 	second Object
 }
 
-func (eadd *ExprAdd) Eval() Object {
+func (eadd *ExprAdd) Eval(s Scope) Object {
 	return eadd.first.Add(eadd.second)
 }
 
@@ -18,6 +18,6 @@ type ExprSub struct {
 	second Object
 }
 
-func (esub *ExprSub) Eval() Object {
+func (esub *ExprSub) Eval(s Scope) Object {
 	return esub.first.Sub(esub.second)
 }
