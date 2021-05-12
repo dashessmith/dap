@@ -168,9 +168,10 @@ func (this *RuneLexer) fetch() (res *Token) {
 			Typ:  ttBlank,
 		}
 	}
-	if unicode.IsLetter(r) {
-		runes := []rune{}
-		for r = this._peekc(); unicode.IsLetter(r); r = this._peekc() {
+	if unicode.IsLetter(r) || r == '_' {
+		runes := []rune{r}
+		this._getc()
+		for r = this._peekc(); unicode.IsLetter(r) || r == '_' || unicode.IsDigit(r); r = this._peekc() {
 			this._getc()
 			runes = append(runes, r)
 		}
@@ -187,7 +188,7 @@ func (this *RuneLexer) fetch() (res *Token) {
 	}
 	if unicode.IsDigit(r) {
 		runes := []rune{}
-		for r = this._peekc(); unicode.IsLetter(r); r = this._peekc() {
+		for r = this._peekc(); unicode.IsDigit(r); r = this._peekc() {
 			this._getc()
 			runes = append(runes, r)
 		}

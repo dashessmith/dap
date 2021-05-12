@@ -13,7 +13,7 @@ func (this *Class) String() string {
 }
 
 type Method struct {
-	class string
+	Class string
 	Function
 }
 
@@ -22,8 +22,8 @@ func (this *Method) String() string {
 }
 
 type Field struct {
-	name  string
-	class string
+	Name  string
+	Class *ClassRef
 }
 
 func (this *Field) String() string {

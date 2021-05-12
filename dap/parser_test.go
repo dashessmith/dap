@@ -8,7 +8,18 @@ import (
 func Test_parser(t *testing.T) {
 	parser := Parser{
 		Lexer: &RuneLexer{
-			content: []rune(`fdsa {} foo(){} fdsa.xx(a, b){}`),
+			content: []rune(`
+			fdsa {
+			} 
+			foo(){ 
+				if 1 + 1 {
+					1-2
+				}
+				(){}
+			} 
+			fdsa.__x123x(a xx.string, b){
+			}
+		`),
 		},
 	}
 	imports, classes, methods, functions, err := parser.parse()

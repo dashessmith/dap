@@ -5,44 +5,44 @@ type Express interface {
 }
 
 type ExprAdd struct {
-	first  Express
-	second Express
+	First  Express
+	Second Express
 }
 
 func (this *ExprAdd) Eval(s Scope) Object {
-	return this.first.Eval(s).Add(this.second.Eval(s))
+	return this.First.Eval(s).Add(this.Second.Eval(s))
 }
 
 type ExprSub struct {
-	first  Express
-	second Express
+	First  Express
+	Second Express
 }
 
 func (this *ExprSub) Eval(s Scope) Object {
-	return this.first.Eval(s).Sub(this.second.Eval(s))
+	return this.First.Eval(s).Sub(this.Second.Eval(s))
 }
 
 type ExprMulti struct {
-	first  Express
-	second Express
+	First  Express
+	Second Express
 }
 
 func (this *ExprMulti) Eval(s Scope) Object {
-	return this.first.Eval(s).Multi(this.second.Eval(s))
+	return this.First.Eval(s).Multi(this.Second.Eval(s))
 }
 
 type ExprDiv struct {
-	first  Express
-	second Express
+	First  Express
+	Second Express
 }
 
 func (this *ExprDiv) Eval(s Scope) Object {
-	return this.first.Eval(s).Div(this.second.Eval(s))
+	return this.First.Eval(s).Div(this.Second.Eval(s))
 }
 
 type ExprAssign struct {
-	target ExprAssignTarget
-	src    Express
+	Target ExprAssignTarget
+	Src    Express
 }
 
 type DefineOrRefOrReturn interface{}
@@ -54,14 +54,14 @@ func (this ExprAssignTarget) Assign(Object) Object {
 }
 
 func (this *ExprAssign) Eval(s Scope) Object {
-	return this.target.Assign(this.src.Eval(s))
+	return this.Target.Assign(this.Src.Eval(s))
 }
 
 type ExprIf struct {
-	prepare   Express
-	condition Express
-	exprs     []Express
-	el        Express
+	Prepare Express
+	Cond    Express
+	Exprs   []Express
+	Else    Express
 }
 
 func (this *ExprIf) Eval(s Scope) Object {
@@ -69,18 +69,31 @@ func (this *ExprIf) Eval(s Scope) Object {
 }
 
 type ExprRef struct {
-	names []string
+	Names []string
 }
 
 func (this *ExprRef) Eval(s Scope) Object {
 	return nil
 }
 
+type ClassRef struct {
+	Pkg  string
+	Name string
+}
+
 type ExprDefine struct {
-	name  string
-	class string
+	Name  string
+	Class *ClassRef
 }
 
 func (this *ExprDefine) Eval(s Scope) Object {
+	return nil
+}
+
+type ExpressLiteralNumber struct {
+	Val string
+}
+
+func (this *ExpressLiteralNumber) Eval(s Scope) Object {
 	return nil
 }

@@ -3,9 +3,9 @@ package dap
 import "dap/utils"
 
 type Function struct {
-	name  string
-	args  Args
-	exprs []Express
+	Name  string
+	Args  Args
+	Exprs []Express
 }
 
 func (this *Function) String() string {
@@ -13,7 +13,7 @@ func (this *Function) String() string {
 }
 
 func (f *Function) Eval(s Scope) (res Object) {
-	for _, expr := range f.exprs {
+	for _, expr := range f.Exprs {
 		res = expr.Eval(s)
 		s.pushTempObject(res)
 	}
@@ -21,8 +21,8 @@ func (f *Function) Eval(s Scope) (res Object) {
 }
 
 type Arg struct {
-	name  string
-	class string
+	Name  string
+	Class *ClassRef
 }
 
 type Args []*Arg

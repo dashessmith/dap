@@ -1,6 +1,8 @@
 package dap
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Parser struct {
 	Lexer
@@ -24,7 +26,7 @@ func (this *Parser) parse() (
 			return
 		}
 		if imp != nil {
-			imports[imp.name] = imp
+			imports[imp.Name] = imp
 			continue
 		}
 
@@ -44,7 +46,7 @@ func (this *Parser) parse() (
 			return
 		}
 		if mthd != nil {
-			methods[mthd.name] = mthd
+			methods[mthd.Name] = mthd
 			continue
 		}
 
@@ -54,7 +56,7 @@ func (this *Parser) parse() (
 			return
 		}
 		if f != nil {
-			functions[f.name] = f
+			functions[f.Name] = f
 			continue
 		}
 		err = fmt.Errorf("unknown token %s", tok)
@@ -75,23 +77,46 @@ func (this *Parser) trans(f func(p *Parser) bool) {
 	}
 }
 
+func (this *Parser) classRef() (res *ClassRef, err error) {
+	this.trans(func(p *Parser) bool {
+		tok1 := p.get()
+		if tok1.Typ != ttSymbol {
+			return false
+		}
+		tok2 := p.get()
+		if tok2.Typ != ttDot {
+			res = &ClassRef{
+				Name: tok1.Val,
+			}
+			return true
+		}
+		tok3 := p.get()
+		if tok3.Typ != ttSymbol {
+			return false
+		}
+		res = &ClassRef{
+			Pkg:  tok1.Val,
+			Name: tok3.Val,
+		}
+		return true
+	})
+	return
+}
+
 func (this *Parser) arg() (res *Arg, err error) {
 	this.trans(func(p *Parser) bool {
 		ntok := p.get()
 		if ntok.Typ != ttSymbol {
 			return false
 		}
-		tok2 := p.peek()
-		if tok2.Typ != ttSymbol {
-			res = &Arg{
-				name: ntok.Val,
-			}
-			return true
+		var cr *ClassRef
+		cr, err = p.classRef()
+		if err != nil {
+			return false
 		}
-		p.get()
 		res = &Arg{
-			name:  ntok.Val,
-			class: tok2.Val,
+			Name:  ntok.Val,
+			Class: cr,
 		}
 		return true
 	})
@@ -99,16 +124,18 @@ func (this *Parser) arg() (res *Arg, err error) {
 }
 
 func (this *Parser) args() (res Args, err error) {
-	this.trans(func(p *Parser) bool {
+	this.trans(func(p *Parser) (ok bool) {
+		defer func() {
+			if ok && res == nil {
+				res = Args{}
+			}
+		}()
 		for tok := p.peek(); tok.Typ != ttRightParenthese; tok = p.peek() {
 			arg, _ := p.arg()
 			if arg == nil {
 				tok = p.peek()
 				if tok.Typ == ttRightParenthese {
 					p.get()
-					if res == nil {
-						res = Args{}
-					}
 					return true
 				}
 				res = nil
@@ -180,15 +207,21 @@ func (this *Parser) method() (res *Method, err error) {
 			err = fmt.Errorf("missing {")
 			return false
 		}
+		var exprs []Express
+		exprs, err = p.exprs(0)
+		if err != nil {
+			return false
+		}
 		if tok := p.get(); tok.Typ != ttRightCurve {
 			err = fmt.Errorf("missing }")
 			return false
 		}
 		res = &Method{
-			class: ctok.Val,
+			Class: ctok.Val,
 			Function: Function{
-				args: args,
-				name: ftok.Val,
+				Args:  args,
+				Name:  ftok.Val,
+				Exprs: exprs,
 			},
 		}
 		return true
@@ -219,18 +252,18 @@ func (this *Parser) function() (res *Function, err error) {
 			return false
 		}
 		var exprs []Express
-		exprs, err = p.exprs()
+		exprs, err = p.exprs(0)
 		if err != nil {
 			return false
 		}
 		if tok := p.get(); tok.Typ != ttRightCurve {
-			err = fmt.Errorf("missing }")
+			err = fmt.Errorf("missing function }")
 			return false
 		}
 		res = &Function{
-			name:  ftok.Val,
-			args:  args,
-			exprs: exprs,
+			Name:  ftok.Val,
+			Args:  args,
+			Exprs: exprs,
 		}
 		return true
 	})
@@ -248,7 +281,7 @@ func (this *Parser) imprt() (res *Import, err error) {
 			panic("should have import path")
 		}
 		res = &Import{
-			path: tok.Val,
+			Path: tok.Val,
 		}
 		return true
 	})
@@ -291,23 +324,16 @@ func (this *Parser) classField() (f *Field, err error) {
 			err = fmt.Errorf("need field name")
 			return false
 		}
-		tok2 := p.get()
-		if tok2.Typ == ttLineEnd {
-			f = &Field{
-				name:  tok1.Val,
-				class: "",
-			}
-			return true
+		var cr *ClassRef
+		cr, err = p.classRef()
+		if err != nil {
+			return false
 		}
-		if tok2.Typ == ttSymbol {
-			f = &Field{
-				name:  tok1.Val,
-				class: tok2.Val,
-			}
-			return true
+		f = &Field{
+			Name:  tok1.Val,
+			Class: cr,
 		}
-		err = fmt.Errorf("invalid field format")
-		return false
+		return true
 	})
 	return
 }
@@ -324,18 +350,25 @@ func (this *Parser) classBody() (fields map[string]*Field, err error) {
 			if f == nil {
 				return true
 			}
-			fields[f.name] = f
+			fields[f.Name] = f
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) exprs() (res []Express, err error) {
-	return
+func (this *Parser) exprs(priority int) (res []Express, err error) {
+	for {
+		var expr Express
+		expr, err = this.expr(priority)
+		if expr == nil || err != nil {
+			return
+		}
+		res = append(res, expr)
+	}
 }
 
-func (this *Parser) lambda() (res Express, err error) {
+func (this *Parser) lambda(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		var args Args
 		args, err = p.argsWithParenthese()
@@ -357,7 +390,7 @@ func (this *Parser) lambda() (res Express, err error) {
 			return false
 		}
 		var exprs []Express
-		exprs, err = p.exprs()
+		exprs, err = p.exprs(0)
 		if err != nil {
 			return false
 		}
@@ -375,7 +408,7 @@ func (this *Parser) lambda() (res Express, err error) {
 	return
 }
 
-func (this *Parser) define() (res Express, err error) {
+func (this *Parser) define(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		if tok := p.get(); tok.Typ != ttVar {
 			return false
@@ -385,24 +418,21 @@ func (this *Parser) define() (res Express, err error) {
 			err = fmt.Errorf("missing variable name")
 			return false
 		}
-		tok2 := p.peek()
-		if tok2.Typ == ttSymbol {
-			p.get()
-			res = &ExprDefine{
-				name:  ntok.Val,
-				class: tok2.Val,
-			}
-			return true
+		var cr *ClassRef
+		cr, err = p.classRef()
+		if err != nil {
+			return false
 		}
 		res = &ExprDefine{
-			name: ntok.Val,
+			Name:  ntok.Val,
+			Class: cr,
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) ref() (res Express, err error) {
+func (this *Parser) ref(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		names := []string{}
 		tok := p.get()
@@ -414,7 +444,7 @@ func (this *Parser) ref() (res Express, err error) {
 		for {
 			if dtok := p.peek(); dtok.Typ != ttDot {
 				res = &ExprRef{
-					names: names,
+					Names: names,
 				}
 				return true
 			}
@@ -430,16 +460,16 @@ func (this *Parser) ref() (res Express, err error) {
 	return
 }
 
-func (this *Parser) defineOrRefOrReturn() (define Express, ref Express, ret *Token, err error) {
+func (this *Parser) defineOrRefOrReturn(priority int) (define Express, ref Express, ret *Token, err error) {
 	this.trans(func(p *Parser) bool {
-		define, err = p.define()
+		define, err = p.define(priority)
 		if err != nil {
 			return false
 		}
 		if define != nil {
 			return true
 		}
-		ref, err = p.ref()
+		ref, err = p.ref(priority)
 		if err != nil {
 			return false
 		}
@@ -455,14 +485,14 @@ func (this *Parser) defineOrRefOrReturn() (define Express, ref Express, ret *Tok
 	return
 }
 
-func (this *Parser) assign() (res Express, err error) {
+func (this *Parser) assign(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		target := ExprAssignTarget{}
 		for {
 			var d Express
 			var r Express
 			var ret *Token
-			d, r, ret, err = p.defineOrRefOrReturn()
+			d, r, ret, err = p.defineOrRefOrReturn(priority + 1)
 			if err != nil {
 				return false
 			}
@@ -486,26 +516,27 @@ func (this *Parser) assign() (res Express, err error) {
 		}
 
 		var expr Express
-		expr, err = p.expr()
+		expr, err = p.expr(priority)
 		if err != nil {
 			return false
 		}
 		res = &ExprAssign{
-			target: target,
-			src:    expr,
+			Target: target,
+			Src:    expr,
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) ifexpr() (res Express, err error) {
+func (this *Parser) ifexpr(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
+		priority++
 		if tok := p.get(); tok.Typ != ttIf {
 			return false
 		}
 		var expr1, expr2 Express
-		expr1, err = p.expr()
+		expr1, err = p.expr(priority)
 		if err != nil {
 			return false
 		}
@@ -514,38 +545,39 @@ func (this *Parser) ifexpr() (res Express, err error) {
 		}
 		tok := p.get()
 		if tok.Typ == ttSemi {
-			expr2, err = p.expr()
+			expr2, err = p.expr(priority)
 			if err != nil {
 				return false
 			}
+			tok = p.get()
 		}
-		tok = p.get()
 		if tok.Typ != ttLeftCurve {
-			err = fmt.Errorf("missing {")
+			err = fmt.Errorf("missing { after if condition")
 			return false
 		}
 		var exprs []Express
-		exprs, err = p.exprs()
+		exprs, err = p.exprs(0)
 		if err != nil {
 			return false
 		}
+		tok = p.get()
 		if tok.Typ != ttRightCurve {
-			err = fmt.Errorf("missing }")
+			err = fmt.Errorf("missing } after if statements")
 			return false
 		}
 		tok = p.peek()
 		if tok.Typ != ttElse {
 			if expr2 != nil {
 				res = &ExprIf{
-					prepare:   expr1,
-					condition: expr2,
-					exprs:     exprs,
+					Prepare: expr1,
+					Cond:    expr2,
+					Exprs:   exprs,
 				}
 				return true
 			}
 			res = &ExprIf{
-				condition: expr1,
-				exprs:     exprs,
+				Cond:  expr1,
+				Exprs: exprs,
 			}
 			return true
 		}
@@ -553,23 +585,23 @@ func (this *Parser) ifexpr() (res Express, err error) {
 		tok = p.peek()
 		if tok.Typ == ttIf {
 			var el Express
-			el, err = p.ifexpr()
+			el, err = p.ifexpr(priority)
 			if err != nil {
 				return false
 			}
 			if expr2 != nil {
 				res = &ExprIf{
-					prepare:   expr1,
-					condition: expr2,
-					exprs:     exprs,
-					el:        el,
+					Prepare: expr1,
+					Cond:    expr2,
+					Exprs:   exprs,
+					Else:    el,
 				}
 				return true
 			}
 			res = &ExprIf{
-				condition: expr1,
-				exprs:     exprs,
-				el:        el,
+				Cond:  expr1,
+				Exprs: exprs,
+				Else:  el,
 			}
 			return true
 		}
@@ -578,7 +610,7 @@ func (this *Parser) ifexpr() (res Express, err error) {
 			err = fmt.Errorf("missing {")
 			return false
 		}
-		exprs, err = p.exprs()
+		exprs, err = p.exprs(0)
 		if err != nil {
 			return false
 		}
@@ -587,31 +619,31 @@ func (this *Parser) ifexpr() (res Express, err error) {
 			return false
 		}
 		el := &ExprIf{
-			exprs: exprs,
+			Exprs: exprs,
 		}
 		if expr2 != nil {
 			res = &ExprIf{
-				prepare:   expr1,
-				condition: expr2,
-				exprs:     exprs,
-				el:        el,
+				Prepare: expr1,
+				Cond:    expr2,
+				Exprs:   exprs,
+				Else:    el,
 			}
 			return true
 		}
 		res = &ExprIf{
-			condition: expr1,
-			exprs:     exprs,
-			el:        el,
+			Cond:  expr1,
+			Exprs: exprs,
+			Else:  el,
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) expradd() (res Express, err error) {
+func (this *Parser) expradd(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		var first, second Express
-		first, err = p.expr()
+		first, err = p.expr(priority + 1)
 		if err != nil {
 			return false
 		}
@@ -621,7 +653,7 @@ func (this *Parser) expradd() (res Express, err error) {
 		if tok := p.get(); tok.Typ != ttAdd {
 			return false
 		}
-		second, err = p.expr()
+		second, err = p.expr(priority)
 		if err != nil {
 			return false
 		}
@@ -629,18 +661,18 @@ func (this *Parser) expradd() (res Express, err error) {
 			return false
 		}
 		res = &ExprAdd{
-			first:  first,
-			second: second,
+			First:  first,
+			Second: second,
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) exprsub() (res Express, err error) {
+func (this *Parser) exprsub(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		var first, second Express
-		first, err = p.expr()
+		first, err = p.expr(priority + 1)
 		if err != nil {
 			return false
 		}
@@ -650,7 +682,7 @@ func (this *Parser) exprsub() (res Express, err error) {
 		if tok := p.get(); tok.Typ != ttSub {
 			return false
 		}
-		second, err = p.expr()
+		second, err = p.expr(priority)
 		if err != nil {
 			return false
 		}
@@ -658,18 +690,18 @@ func (this *Parser) exprsub() (res Express, err error) {
 			return false
 		}
 		res = &ExprSub{
-			first:  first,
-			second: second,
+			First:  first,
+			Second: second,
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) exprmulti() (res Express, err error) {
+func (this *Parser) exprmulti(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		var first, second Express
-		first, err = p.expr()
+		first, err = p.expr(priority + 1)
 		if err != nil {
 			return false
 		}
@@ -679,7 +711,7 @@ func (this *Parser) exprmulti() (res Express, err error) {
 		if tok := p.get(); tok.Typ != ttMulti {
 			return false
 		}
-		second, err = p.expr()
+		second, err = p.expr(priority)
 		if err != nil {
 			return false
 		}
@@ -687,18 +719,18 @@ func (this *Parser) exprmulti() (res Express, err error) {
 			return false
 		}
 		res = &ExprMulti{
-			first:  first,
-			second: second,
+			First:  first,
+			Second: second,
 		}
 		return true
 	})
 	return
 }
 
-func (this *Parser) exprdiv() (res Express, err error) {
+func (this *Parser) exprdiv(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		var first, second Express
-		first, err = p.expr()
+		first, err = p.expr(priority + 1)
 		if err != nil {
 			return false
 		}
@@ -708,7 +740,7 @@ func (this *Parser) exprdiv() (res Express, err error) {
 		if tok := p.get(); tok.Typ != ttDiv {
 			return false
 		}
-		second, err = p.expr()
+		second, err = p.expr(priority)
 		if err != nil {
 			return false
 		}
@@ -716,34 +748,57 @@ func (this *Parser) exprdiv() (res Express, err error) {
 			return false
 		}
 		res = &ExprDiv{
-			first:  first,
-			second: second,
+			First:  first,
+			Second: second,
 		}
 		return true
 	})
 	return
 }
 
-var _exprfuncs []func(*Parser) (Express, error)
+func (this *Parser) instnum(priority int) (res Express, err error) {
+	this.trans(func(p *Parser) bool {
+		tok := p.get()
+		if tok.Typ != ttConstNumber {
+			return false
+		}
+		res = &ExpressLiteralNumber{
+			Val: tok.Val,
+		}
+		return true
+	})
+	return
+}
+
+type PriExpr struct {
+	pri int
+	f   func(p *Parser, priority int) (Express, error)
+}
+
+var _exprfuncs []*PriExpr
 
 func init() {
-	_exprfuncs = []func(*Parser) (Express, error){
-		(*Parser).lambda,
-		(*Parser).assign,
-		(*Parser).ifexpr,
-		(*Parser).exprmulti,
-		(*Parser).exprdiv,
-		(*Parser).expradd,
-		(*Parser).exprsub,
-		(*Parser).ref,
-		(*Parser).define,
+	_exprfuncs = []*PriExpr{
+		{0, (*Parser).assign},
+		{5, (*Parser).ref},
+		{5, (*Parser).define},
+		{10, (*Parser).ifexpr},
+		{20, (*Parser).lambda},
+		{30, (*Parser).expradd},
+		{30, (*Parser).exprsub},
+		{40, (*Parser).exprmulti},
+		{40, (*Parser).exprdiv},
+		{90, (*Parser).instnum},
 	}
 }
 
-func (this *Parser) expr() (res Express, err error) {
+func (this *Parser) expr(priority int) (res Express, err error) {
 	this.trans(func(p *Parser) bool {
-		for _, f := range _exprfuncs {
-			res, err = f(p)
+		for _, pf := range _exprfuncs {
+			if pf.pri < priority {
+				continue
+			}
+			res, err = pf.f(p, pf.pri)
 			if err != nil {
 				return false
 			}
