@@ -12,7 +12,10 @@ func (this *Parser) parse() (
 	methods map[string]*Method,
 	err error,
 ) {
-	for tok := this.peek(); tok.typ != ttEOF; tok = this.peek() {
+	imports = map[string]*Import{}
+	classes = map[string]*Class{}
+	methods = map[string]*Method{}
+	for tok := this.peek(); tok.Typ != ttEOF; tok = this.peek() {
 		var imp *Import
 		imp, err = this.imprt()
 		if err != nil {
@@ -42,7 +45,7 @@ func (this *Parser) parse() (
 			methods[mthd.name] = mthd
 			continue
 		}
-		err = fmt.Errorf("")
+		err = fmt.Errorf("unknown token %s", tok)
 		return
 	}
 	return
@@ -63,20 +66,20 @@ func (this *Parser) trans(f func(p *Parser) bool) {
 func (this *Parser) arg() (res *Arg, err error) {
 	this.trans(func(p *Parser) bool {
 		ntok := p.get()
-		if ntok.typ != ttSymbol {
+		if ntok.Typ != ttSymbol {
 			return false
 		}
 		tok2 := p.peek()
-		if tok2.typ != ttSymbol {
+		if tok2.Typ != ttSymbol {
 			res = &Arg{
-				name: ntok.val,
+				name: ntok.Val,
 			}
 			return true
 		}
 		p.get()
 		res = &Arg{
-			name:  ntok.val,
-			class: tok2.val,
+			name:  ntok.Val,
+			class: tok2.Val,
 		}
 		return true
 	})
@@ -85,11 +88,11 @@ func (this *Parser) arg() (res *Arg, err error) {
 
 func (this *Parser) args() (res Args, err error) {
 	this.trans(func(p *Parser) bool {
-		for tok := p.peek(); tok.typ != ttRightParenthese; tok = p.peek() {
+		for tok := p.peek(); tok.Typ != ttRightParenthese; tok = p.peek() {
 			arg, _ := p.arg()
 			if arg == nil {
 				tok = p.peek()
-				if tok.typ == ttRightParenthese {
+				if tok.Typ == ttRightParenthese {
 					p.get()
 					if res == nil {
 						res = Args{}
@@ -101,11 +104,11 @@ func (this *Parser) args() (res Args, err error) {
 			}
 			res = append(res, arg)
 			tok = p.peek()
-			if tok.typ == ttComma {
+			if tok.Typ == ttComma {
 				p.get()
 				continue
 			}
-			if tok.typ == ttRightParenthese {
+			if tok.Typ == ttRightParenthese {
 				return true
 			}
 			err = fmt.Errorf("parse args failed")
@@ -118,14 +121,14 @@ func (this *Parser) args() (res Args, err error) {
 
 func (this *Parser) argsWithParenthese() (res Args, err error) {
 	this.trans(func(p *Parser) bool {
-		if tok := p.get(); tok.typ != ttLeftParenthese {
+		if tok := p.get(); tok.Typ != ttLeftParenthese {
 			return false
 		}
 		res, err = p.args()
 		if err != nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttRightParenthese {
+		if tok := p.get(); tok.Typ != ttRightParenthese {
 			err = fmt.Errorf("missing )")
 			return false
 		}
@@ -137,18 +140,18 @@ func (this *Parser) argsWithParenthese() (res Args, err error) {
 func (this *Parser) method() (res *Method, err error) {
 	this.trans(func(p *Parser) bool {
 		ctok := p.get()
-		if ctok.typ != ttSymbol {
+		if ctok.Typ != ttSymbol {
 			return false
 		}
-		if dtok := p.get(); dtok.typ != ttDot {
+		if dtok := p.get(); dtok.Typ != ttDot {
 			return false
 		}
 		ftok := p.get()
-		if ftok.typ != ttSymbol {
+		if ftok.Typ != ttSymbol {
 			err = fmt.Errorf("missing method name")
 			return false
 		}
-		if tok := p.get(); tok.typ != ttLeftParenthese {
+		if tok := p.get(); tok.Typ != ttLeftParenthese {
 			err = fmt.Errorf("missing (")
 			return false
 		}
@@ -157,23 +160,23 @@ func (this *Parser) method() (res *Method, err error) {
 		if err != nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttRightParenthese {
+		if tok := p.get(); tok.Typ != ttRightParenthese {
 			err = fmt.Errorf("missing )")
 			return false
 		}
-		if tok := p.get(); tok.typ != ttLeftCurve {
+		if tok := p.get(); tok.Typ != ttLeftCurve {
 			err = fmt.Errorf("missing {")
 			return false
 		}
-		if tok := p.get(); tok.typ != ttRightCurve {
+		if tok := p.get(); tok.Typ != ttRightCurve {
 			err = fmt.Errorf("missing }")
 			return false
 		}
 		res = &Method{
-			class: ctok.val,
+			class: ctok.Val,
 			Function: Function{
 				args: args,
-				name: ftok.val,
+				name: ftok.Val,
 			},
 		}
 		return true
@@ -184,15 +187,15 @@ func (this *Parser) method() (res *Method, err error) {
 func (this *Parser) imprt() (res *Import, err error) {
 	this.trans(func(p *Parser) bool {
 		tok := p.get()
-		if tok.typ != ttImport {
+		if tok.Typ != ttImport {
 			return false
 		}
 		tok = p.get()
-		if tok.typ != ttConstString {
+		if tok.Typ != ttConstString {
 			panic("should have import path")
 		}
 		res = &Import{
-			path: tok.val,
+			path: tok.Val,
 		}
 		return true
 	})
@@ -202,11 +205,11 @@ func (this *Parser) imprt() (res *Import, err error) {
 func (this *Parser) class() (c *Class, err error) {
 	this.trans(func(p *Parser) bool {
 		nametok := p.get()
-		if nametok.typ != ttSymbol {
+		if nametok.Typ != ttSymbol {
 			return false
 		}
 		leftblock := p.get()
-		if leftblock.typ != ttLeftCurve {
+		if leftblock.Typ != ttLeftCurve {
 			return false
 		}
 		var fields map[string]*Field
@@ -215,12 +218,12 @@ func (this *Parser) class() (c *Class, err error) {
 			return false
 		}
 		rightblock := p.get()
-		if rightblock.typ != ttRightCurve {
+		if rightblock.Typ != ttRightCurve {
 			err = fmt.Errorf("need right }")
 			return false
 		}
 		c = &Class{
-			name:   nametok.val,
+			name:   nametok.Val,
 			fields: fields,
 		}
 		return true
@@ -231,22 +234,22 @@ func (this *Parser) class() (c *Class, err error) {
 func (this *Parser) classField() (f *Field, err error) {
 	this.trans(func(p *Parser) bool {
 		tok1 := p.get()
-		if tok1.typ != ttSymbol {
+		if tok1.Typ != ttSymbol {
 			err = fmt.Errorf("need field name")
 			return false
 		}
 		tok2 := p.get()
-		if tok2.typ == ttLineEnd {
+		if tok2.Typ == ttLineEnd {
 			f = &Field{
-				name:  tok1.val,
+				name:  tok1.Val,
 				class: "",
 			}
 			return true
 		}
-		if tok2.typ == ttSymbol {
+		if tok2.Typ == ttSymbol {
 			f = &Field{
-				name:  tok1.val,
-				class: tok2.val,
+				name:  tok1.Val,
+				class: tok2.Val,
 			}
 			return true
 		}
@@ -259,7 +262,7 @@ func (this *Parser) classField() (f *Field, err error) {
 func (this *Parser) classBody() (fields map[string]*Field, err error) {
 	fields = map[string]*Field{}
 	this.trans(func(p *Parser) bool {
-		for tok := p.peek(); tok.typ != ttRightCurve; tok = p.peek() {
+		for tok := p.peek(); tok.Typ != ttRightCurve; tok = p.peek() {
 			var f *Field
 			f, err = p.classField()
 			if err != nil {
@@ -296,7 +299,7 @@ func (this *Parser) lambda() (res Express, err error) {
 			return false
 		}
 
-		if tok := p.get(); tok.typ != ttLeftCurve {
+		if tok := p.get(); tok.Typ != ttLeftCurve {
 			err = fmt.Errorf("missing {")
 			return false
 		}
@@ -305,7 +308,7 @@ func (this *Parser) lambda() (res Express, err error) {
 		if err != nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttRightCurve {
+		if tok := p.get(); tok.Typ != ttRightCurve {
 			err = fmt.Errorf("missing }")
 			return false
 		}
@@ -321,25 +324,25 @@ func (this *Parser) lambda() (res Express, err error) {
 
 func (this *Parser) define() (res Express, err error) {
 	this.trans(func(p *Parser) bool {
-		if tok := p.get(); tok.typ != ttVar {
+		if tok := p.get(); tok.Typ != ttVar {
 			return false
 		}
 		ntok := p.get()
-		if ntok.typ != ttSymbol {
+		if ntok.Typ != ttSymbol {
 			err = fmt.Errorf("missing variable name")
 			return false
 		}
 		tok2 := p.peek()
-		if tok2.typ == ttSymbol {
+		if tok2.Typ == ttSymbol {
 			p.get()
 			res = &ExprDefine{
-				name:  ntok.val,
-				class: tok2.val,
+				name:  ntok.Val,
+				class: tok2.Val,
 			}
 			return true
 		}
 		res = &ExprDefine{
-			name: ntok.val,
+			name: ntok.Val,
 		}
 		return true
 	})
@@ -350,13 +353,13 @@ func (this *Parser) ref() (res Express, err error) {
 	this.trans(func(p *Parser) bool {
 		names := []string{}
 		tok := p.get()
-		if tok.typ != ttSymbol {
+		if tok.Typ != ttSymbol {
 			return false
 		}
-		names = append(names, tok.val)
+		names = append(names, tok.Val)
 
 		for {
-			if dtok := p.peek(); dtok.typ != ttDot {
+			if dtok := p.peek(); dtok.Typ != ttDot {
 				res = &ExprRef{
 					names: names,
 				}
@@ -364,13 +367,12 @@ func (this *Parser) ref() (res Express, err error) {
 			}
 			p.get()
 			tok = p.get()
-			if tok.typ != ttSymbol {
+			if tok.Typ != ttSymbol {
 				err = fmt.Errorf("invalid reference")
 				return false
 			}
-			names = append(names, tok.val)
+			names = append(names, tok.Val)
 		}
-		return false
 	})
 	return
 }
@@ -391,7 +393,7 @@ func (this *Parser) defineOrRefOrReturn() (define Express, ref Express, ret *Tok
 		if ref != nil {
 			return true
 		}
-		if tok := p.get(); tok.typ == ttReturn {
+		if tok := p.get(); tok.Typ == ttReturn {
 			ret = tok
 			return true
 		}
@@ -426,7 +428,7 @@ func (this *Parser) assign() (res Express, err error) {
 			break
 		}
 
-		if tok := p.get(); tok.typ != ttAssign {
+		if tok := p.get(); tok.Typ != ttAssign {
 			return false
 		}
 
@@ -446,7 +448,7 @@ func (this *Parser) assign() (res Express, err error) {
 
 func (this *Parser) ifexpr() (res Express, err error) {
 	this.trans(func(p *Parser) bool {
-		if tok := p.get(); tok.typ != ttIf {
+		if tok := p.get(); tok.Typ != ttIf {
 			return false
 		}
 		var expr1, expr2 Express
@@ -458,14 +460,14 @@ func (this *Parser) ifexpr() (res Express, err error) {
 			return false
 		}
 		tok := p.get()
-		if tok.typ == ttSemi {
+		if tok.Typ == ttSemi {
 			expr2, err = p.expr()
 			if err != nil {
 				return false
 			}
 		}
 		tok = p.get()
-		if tok.typ != ttLeftCurve {
+		if tok.Typ != ttLeftCurve {
 			err = fmt.Errorf("missing {")
 			return false
 		}
@@ -474,12 +476,12 @@ func (this *Parser) ifexpr() (res Express, err error) {
 		if err != nil {
 			return false
 		}
-		if tok.typ != ttRightCurve {
+		if tok.Typ != ttRightCurve {
 			err = fmt.Errorf("missing }")
 			return false
 		}
 		tok = p.peek()
-		if tok.typ != ttElse {
+		if tok.Typ != ttElse {
 			if expr2 != nil {
 				res = &ExprIf{
 					prepare:   expr1,
@@ -496,7 +498,7 @@ func (this *Parser) ifexpr() (res Express, err error) {
 		}
 		p.get()
 		tok = p.peek()
-		if tok.typ == ttIf {
+		if tok.Typ == ttIf {
 			var el Express
 			el, err = p.ifexpr()
 			if err != nil {
@@ -519,7 +521,7 @@ func (this *Parser) ifexpr() (res Express, err error) {
 			return true
 		}
 		tok = p.get()
-		if tok.typ != ttLeftCurve {
+		if tok.Typ != ttLeftCurve {
 			err = fmt.Errorf("missing {")
 			return false
 		}
@@ -527,7 +529,7 @@ func (this *Parser) ifexpr() (res Express, err error) {
 		if err != nil {
 			return false
 		}
-		if tok.typ != ttRightCurve {
+		if tok.Typ != ttRightCurve {
 			err = fmt.Errorf("missing }")
 			return false
 		}
@@ -563,7 +565,7 @@ func (this *Parser) expradd() (res Express, err error) {
 		if first == nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttAdd {
+		if tok := p.get(); tok.Typ != ttAdd {
 			return false
 		}
 		second, err = p.expr()
@@ -592,7 +594,7 @@ func (this *Parser) exprsub() (res Express, err error) {
 		if first == nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttSub {
+		if tok := p.get(); tok.Typ != ttSub {
 			return false
 		}
 		second, err = p.expr()
@@ -621,7 +623,7 @@ func (this *Parser) exprmulti() (res Express, err error) {
 		if first == nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttMulti {
+		if tok := p.get(); tok.Typ != ttMulti {
 			return false
 		}
 		second, err = p.expr()
@@ -650,7 +652,7 @@ func (this *Parser) exprdiv() (res Express, err error) {
 		if first == nil {
 			return false
 		}
-		if tok := p.get(); tok.typ != ttDiv {
+		if tok := p.get(); tok.Typ != ttDiv {
 			return false
 		}
 		second, err = p.expr()

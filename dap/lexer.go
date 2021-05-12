@@ -1,7 +1,7 @@
 package dap
 
 import (
-	"dap/utils"
+	"log"
 	"unicode"
 )
 
@@ -47,8 +47,16 @@ func (this *RuneLexer) done() {
 }
 
 func (this *RuneLexer) get() (res *Token) {
+	for res = this.getimpl(); res.Typ == ttBlank; res = this.getimpl() {
+	}
+	return
+}
+
+func (this *RuneLexer) getimpl() (res *Token) {
 	if len(this.toks) > this.tIdx {
-		return this.toks[this.tIdx]
+		res = this.toks[this.tIdx]
+		this.tIdx++
+		return
 	}
 	tok := this.fetch()
 	this.toks = append(this.toks, tok)
@@ -56,7 +64,12 @@ func (this *RuneLexer) get() (res *Token) {
 	return tok
 }
 
-func (this *RuneLexer) peek() *Token {
+func (this *RuneLexer) peek() (res *Token) {
+	for res = this.peekimpl(); res.Typ == ttBlank; res = this.get() {
+	}
+	return
+}
+func (this *RuneLexer) peekimpl() *Token {
 	if len(this.toks) > this.tIdx {
 		return this.toks[this.tIdx]
 	}
@@ -93,32 +106,53 @@ func (this *RuneLexer) _begin() *RuneLexer {
 	}
 }
 
-func (this *RuneLexer) _done() *RuneLexer {
+func (this *RuneLexer) _done() {
 	if this._hasCommited {
 		this.emitor.cIdx = this.cIdx
 		this.emitor.toks = this.toks
 		this.emitor.line = this.line
 		this.emitor.col = this.col
 	}
-	return this.emitor
 }
 
 func (this *RuneLexer) _commit() {
 	this._hasCommited = true
 }
 
-func (this *RuneLexer) _trans(f func(l *RuneLexer) bool) {
-	l := this._begin()
-	defer l._done()
-	if f(l) {
-		l._commit()
+func (this *RuneLexer) _trans(f func(tx *RuneLexer) bool) {
+	tx := this._begin()
+	defer tx._done()
+	if f(tx) {
+		tx._commit()
 	}
+}
+
+func (this *RuneLexer) consume(str string, typ TokenType) (res *Token) {
+
+	this._trans(func(tx *RuneLexer) bool {
+		var runes []rune
+		for r := tx._getc(); r != 0; r = tx._getc() {
+			runes = append(runes, r)
+			if len(runes) >= len(str) {
+				break
+			}
+		}
+		if string(runes) != str {
+			return false
+		}
+		res = &Token{
+			Val: str,
+			Typ: typ,
+		}
+		return true
+	})
+	return
 }
 
 func (this *RuneLexer) fetch() (res *Token) {
 	if this.cIdx >= len(this.content) {
 		return &Token{
-			typ: ttEOF,
+			Typ: ttEOF,
 		}
 	}
 	r := this._peekc()
@@ -129,28 +163,98 @@ func (this *RuneLexer) fetch() (res *Token) {
 			runes = append(runes, r)
 		}
 		return &Token{
-			line: 0,
-			col:  0,
-			val:  string(runes),
-			typ:  ttBlank,
+			Line: 0,
+			Col:  0,
+			Val:  string(runes),
+			Typ:  ttBlank,
 		}
 	}
-
-	switch this.content[this.cIdx] {
-	case ' ':
-
-		for this.cIdx++; utils.RuneIn(this.content[this.cIdx], ' ', '\t', '\r', '\n'); this.cIdx++ {
-			runes = append(runes, this.content[this.cIdx])
+	if unicode.IsLetter(r) {
+		for r = this._peekc(); unicode.IsLetter(r); r = this._peekc() {
+			this._getc()
+			runes = append(runes, r)
 		}
-
-	default:
-		for this.cIdx++; !utils.RuneIn(this.content[this.cIdx], ' ', '\t', '\r', '\n'); this.cIdx++ {
-			runes = append(runes, this.content[this.cIdx])
+		switch str := string(runes); str {
+		case `import`:
+			return &Token{Typ: ttImport}
+		case `if`:
+			return &Token{Typ: ttIf}
+		case `else`:
+			return &Token{Typ: ttElse}
+		default:
+			return &Token{Typ: ttSymbol, Val: str}
+		}
+	}
+	if unicode.IsDigit(r) {
+		for r = this._peekc(); unicode.IsLetter(r); r = this._peekc() {
+			this._getc()
+			runes = append(runes, r)
 		}
 		return &Token{
-			line: 0,
-			col:  0,
-			val:  string(runes),
+			Typ: ttConstNumber,
+			Val: string(runes),
 		}
 	}
+	if res = this.consume(">=", ttGTE); res != nil {
+		return
+	}
+	if res = this.consume(">>", ttShiftRight); res != nil {
+		return
+	}
+	if res = this.consume(">", ttGT); res != nil {
+		return
+	}
+	if res = this.consume("==", ttEqual); res != nil {
+		return
+	}
+	if res = this.consume("++", ttAddAdd); res != nil {
+		return
+	}
+	if res = this.consume("+", ttAdd); res != nil {
+		return
+	}
+	if res = this.consume("-", ttSub); res != nil {
+		return
+	}
+	if res = this.consume("*", ttMulti); res != nil {
+		return
+	}
+	if res = this.consume("/", ttDiv); res != nil {
+		return
+	}
+	if res = this.consume("(", ttLeftParenthese); res != nil {
+		return
+	}
+	if res = this.consume(")", ttRightParenthese); res != nil {
+		return
+	}
+	if res = this.consume("[", ttLeftBracket); res != nil {
+		return
+	}
+	if res = this.consume("]", ttRigthBracket); res != nil {
+		return
+	}
+	if res = this.consume("{", ttLeftCurve); res != nil {
+		return
+	}
+	if res = this.consume("}", ttRightCurve); res != nil {
+		return
+	}
+	if res = this.consume("==", ttEqual); res != nil {
+		return
+	}
+	if res = this.consume("=", ttAssign); res != nil {
+		return
+	}
+	if res = this.consume("!=", ttNotEqual); res != nil {
+		return
+	}
+	if res = this.consume("!", ttNot); res != nil {
+		return
+	}
+	if res = this.consume(".", ttDot); res != nil {
+		return
+	}
+	log.Panicf("unknown char %s\n", string(r))
+	return nil
 }
