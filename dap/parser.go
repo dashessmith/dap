@@ -36,7 +36,7 @@ func (this *Parser) parse() (
 			return
 		}
 		if cls != nil {
-			classes[cls.name] = cls
+			classes[cls.Name] = cls
 			continue
 		}
 
@@ -309,8 +309,8 @@ func (this *Parser) class() (c *Class, err error) {
 			return false
 		}
 		c = &Class{
-			name:   nametok.Val,
-			fields: fields,
+			Name:   nametok.Val,
+			Fields: fields,
 		}
 		return true
 	})
@@ -321,7 +321,6 @@ func (this *Parser) classField() (f *Field, err error) {
 	this.trans(func(p *Parser) bool {
 		tok1 := p.get()
 		if tok1.Typ != ttSymbol {
-			err = fmt.Errorf("need field name")
 			return false
 		}
 		var cr *ClassRef
@@ -399,9 +398,9 @@ func (this *Parser) lambda(priority int) (res Express, err error) {
 			return false
 		}
 		res = &Lambda{
-			args:  args,
-			ret:   ret,
-			exprs: exprs,
+			Args:  args,
+			Rets:   ret,
+			Exprs: exprs,
 		}
 		return true
 	})

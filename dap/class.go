@@ -3,9 +3,9 @@ package dap
 import "dap/utils"
 
 type Class struct {
-	name    string
-	fields  map[string]*Field
-	methods map[string]*Method
+	Name    string
+	Fields  map[string]*Field
+	Methods map[string]*Method
 }
 
 func (this *Class) String() string {

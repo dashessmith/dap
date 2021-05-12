@@ -9,15 +9,16 @@ func Test_parser(t *testing.T) {
 	parser := Parser{
 		Lexer: &RuneLexer{
 			content: []rune(`
-			fdsa {
-			} 
-			foo(){ 
-				if 1 + 1 {
-					1-2
-				}
-				(){}
-			} 
-			fdsa.__x123x(a xx.string, b){
+			student {
+				birth
+				score
+				enter_date
+			 } 
+			 student.new(){ 
+
+			 } 
+			main(){
+				
 			}
 		`),
 		},

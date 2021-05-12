@@ -28,13 +28,13 @@ type Arg struct {
 type Args []*Arg
 
 type Lambda struct {
-	args  Args
-	ret   Args
-	exprs []Express
+	Args  Args
+	Rets  Args
+	Exprs []Express
 }
 
 func (f *Lambda) Eval(s Scope) (res Object) {
-	for _, expr := range f.exprs {
+	for _, expr := range f.Exprs {
 		res = expr.Eval(s)
 		s.pushTempObject(res)
 	}
