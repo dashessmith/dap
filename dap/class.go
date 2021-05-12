@@ -7,7 +7,7 @@ type Class struct {
 }
 
 type Method struct {
-	This Object
+	class string
 	Function
 }
 

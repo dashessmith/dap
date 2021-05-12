@@ -1,12 +1,30 @@
 package dap
 
 const (
-	ttSymbol = iota + 1
+	ttEOF = iota
+	ttBlank
+	ttSymbol
 	ttImport
 	ttConstString
-	ttLeftBrace
-	ttRightBrace
+	ttLeftParenthese
+	ttRightParenthese
+	ttLeftBracket
+	ttRigthBracket
+	ttLeftCurve
+	ttRightCurve
 	ttLineEnd
+	ttDot
+	ttComma
+	ttVar
+	ttAssign
+	ttReturn
+	ttIf
+	ttElse
+	ttSemi
+	ttAdd
+	ttSub
+	ttMulti
+	ttDiv
 )
 
 type Token struct {
