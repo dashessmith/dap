@@ -8,7 +8,7 @@ type Parser struct {
 	Lexer
 }
 
-func (this *Parser) parse() (
+func (this *Parser) Parse() (
 	imports map[string]*Import,
 	classes map[string]*Class,
 	methods map[string]*Method,
@@ -19,6 +19,7 @@ func (this *Parser) parse() (
 	classes = map[string]*Class{}
 	methods = map[string]*Method{}
 	functions = map[string]*Function{}
+
 	for tok := this.peek(); tok.Typ != ttEOF; tok = this.peek() {
 		var imp *Import
 		imp, err = this.imprt()
@@ -77,20 +78,72 @@ func (this *Parser) trans(f func(p *Parser) bool) {
 	}
 }
 
+func (this *Parser) get() (tok *Token) {
+	for tok = this.Lexer.get(); ; tok = this.Lexer.get() {
+		if tok.Typ == ttBlank {
+			continue
+		}
+		if tok.Typ == ttLineEnd {
+			continue
+		}
+		break
+	}
+	return
+}
+
+func (this *Parser) getex(linend bool) (tok *Token) {
+	for tok = this.Lexer.get(); ; tok = this.Lexer.get() {
+		if tok.Typ == ttBlank {
+			continue
+		}
+		if !linend && tok.Typ == ttLineEnd {
+			continue
+		}
+		break
+	}
+	return
+}
+
+func (this *Parser) peekex(linend bool) (tok *Token) {
+	for tok = this.Lexer.peek(); ; _, tok = this.Lexer.get(), this.Lexer.peek() {
+		if tok.Typ == ttBlank {
+			continue
+		}
+		if !linend && tok.Typ == ttLineEnd {
+			continue
+		}
+		break
+	}
+	return
+}
+
+func (this *Parser) peek() (tok *Token) {
+	for tok = this.Lexer.peek(); ; _, tok = this.Lexer.get(), this.Lexer.peek() {
+		if tok.Typ == ttBlank {
+			continue
+		}
+		if tok.Typ == ttLineEnd {
+			continue
+		}
+		break
+	}
+	return
+}
+
 func (this *Parser) classRef() (res *ClassRef, err error) {
 	this.trans(func(p *Parser) bool {
-		tok1 := p.get()
+		tok1 := p.getex(true)
 		if tok1.Typ != ttSymbol {
 			return false
 		}
-		tok2 := p.get()
+		tok2 := p.getex(true)
 		if tok2.Typ != ttDot {
 			res = &ClassRef{
 				Name: tok1.Val,
 			}
 			return true
 		}
-		tok3 := p.get()
+		tok3 := p.getex(true)
 		if tok3.Typ != ttSymbol {
 			return false
 		}
@@ -213,7 +266,7 @@ func (this *Parser) method() (res *Method, err error) {
 			return false
 		}
 		if tok := p.get(); tok.Typ != ttRightCurve {
-			err = fmt.Errorf("missing }")
+			err = fmt.Errorf("missing } after method")
 			return false
 		}
 		res = &Method{
@@ -319,7 +372,7 @@ func (this *Parser) class() (c *Class, err error) {
 
 func (this *Parser) classField() (f *Field, err error) {
 	this.trans(func(p *Parser) bool {
-		tok1 := p.get()
+		tok1 := p.getex(false)
 		if tok1.Typ != ttSymbol {
 			return false
 		}
@@ -399,7 +452,7 @@ func (this *Parser) lambda(priority int) (res Express, err error) {
 		}
 		res = &Lambda{
 			Args:  args,
-			Rets:   ret,
+			Rets:  ret,
 			Exprs: exprs,
 		}
 		return true
@@ -779,16 +832,44 @@ var _exprfuncs []*PriExpr
 func init() {
 	_exprfuncs = []*PriExpr{
 		{0, (*Parser).assign},
-		{5, (*Parser).ref},
 		{5, (*Parser).define},
 		{10, (*Parser).ifexpr},
+		{15, (*Parser).exprCmp},
 		{20, (*Parser).lambda},
 		{30, (*Parser).expradd},
 		{30, (*Parser).exprsub},
 		{40, (*Parser).exprmulti},
 		{40, (*Parser).exprdiv},
 		{90, (*Parser).instnum},
+		{100, (*Parser).ref},
 	}
+}
+
+func (this *Parser) exprCmp(priority int) (res Express, err error) {
+	this.trans(func(p *Parser) bool {
+		var expr1 Express
+		expr1, err = p.expr(priority + 1)
+		if err != nil {
+			return false
+		}
+		if expr1 == nil {
+			return false
+		}
+		var expr2 Express
+		switch tok := p.get(); tok.Typ {
+		case ttGT, ttGTE, ttLT, ttLTE:
+			if expr2, err = p.expr(priority); err == nil && expr2 != nil {
+				res = &ExprCmp{
+					OP:     tok.Typ,
+					First:  expr1,
+					Second: expr2,
+				}
+				return true
+			}
+		}
+		return false
+	})
+	return
 }
 
 func (this *Parser) expr(priority int) (res Express, err error) {

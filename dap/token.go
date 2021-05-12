@@ -42,6 +42,14 @@ const (
 	ttSub
 	ttMulti
 	ttDiv
+	ttLogicOr
+	ttLogicAnd
+	ttLogicOrAssign
+	ttLogicAndAssign
+	ttBitwiseOr
+	ttBitwiseAnd
+	ttBitwiseOrAssign
+	ttBitwiseAndAssign
 )
 
 func (this TokenType) MarshalJSON() (bs []byte, err error) {

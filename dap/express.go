@@ -13,6 +13,16 @@ func (this *ExprAdd) Eval(s Scope) Object {
 	return this.First.Eval(s).Add(this.Second.Eval(s))
 }
 
+type ExprCmp struct {
+	OP     TokenType
+	First  Express
+	Second Express
+}
+
+func (this *ExprCmp) Eval(s Scope) Object {
+	return this.First.Eval(s).GT(this.Second.Eval(s))
+}
+
 type ExprSub struct {
 	First  Express
 	Second Express
@@ -95,5 +105,23 @@ type ExpressLiteralNumber struct {
 }
 
 func (this *ExpressLiteralNumber) Eval(s Scope) Object {
+	return nil
+}
+
+type ExprOr struct {
+	First  Express
+	Second Express
+}
+
+func (this *ExprOr) Eval(s Scope) Object {
+	return nil
+}
+
+type ExprAnd struct {
+	First  Express
+	Second Express
+}
+
+func (this *ExprAnd) Eval(s Scope) Object {
 	return nil
 }

@@ -20,7 +20,7 @@ type RuneLexer struct {
 	tIdx         int
 	line         int
 	col          int
-	content      []rune
+	Content      []rune
 	cIdx         int
 	_hasCommited bool
 }
@@ -47,9 +47,7 @@ func (this *RuneLexer) done() {
 }
 
 func (this *RuneLexer) get() (res *Token) {
-	for res = this.getimpl(); res.Typ == ttBlank; res = this.getimpl() {
-	}
-	return
+	return this.getimpl()
 }
 
 func (this *RuneLexer) getimpl() (res *Token) {
@@ -64,10 +62,7 @@ func (this *RuneLexer) getimpl() (res *Token) {
 }
 
 func (this *RuneLexer) peek() (res *Token) {
-	for res = this.peekimpl(); res.Typ == ttBlank; res = this.peekimpl() {
-		this.tIdx++
-	}
-	return
+	return this.peekimpl()
 }
 func (this *RuneLexer) peekimpl() *Token {
 	for len(this.toks) <= this.tIdx {
@@ -78,19 +73,19 @@ func (this *RuneLexer) peekimpl() *Token {
 }
 
 func (this *RuneLexer) _getc() rune {
-	if this.cIdx >= len(this.content) {
+	if this.cIdx >= len(this.Content) {
 		return 0
 	}
-	r := this.content[this.cIdx]
+	r := this.Content[this.cIdx]
 	this.cIdx++
 	return r
 }
 
 func (this *RuneLexer) _peekc() rune {
-	if this.cIdx >= len(this.content) {
+	if this.cIdx >= len(this.Content) {
 		return 0
 	}
-	return this.content[this.cIdx]
+	return this.Content[this.cIdx]
 }
 
 func (this *RuneLexer) _begin() *RuneLexer {
@@ -100,7 +95,7 @@ func (this *RuneLexer) _begin() *RuneLexer {
 		tIdx:    this.tIdx,
 		line:    this.line,
 		col:     this.col,
-		content: this.content,
+		Content: this.Content,
 		cIdx:    this.cIdx,
 	}
 }
@@ -149,12 +144,18 @@ func (this *RuneLexer) consume(str string, typ TokenType) (res *Token) {
 }
 
 func (this *RuneLexer) fetch() (res *Token) {
-	if this.cIdx >= len(this.content) {
+	if this.cIdx >= len(this.Content) {
 		return &Token{
 			Typ: ttEOF,
 		}
 	}
 	r := this._peekc()
+	if r == '\n' {
+		this._getc()
+		return &Token{
+			Typ: ttLineEnd,
+		}
+	}
 	if unicode.IsSpace(r) {
 		runes := []rune{}
 		for r := this._peekc(); unicode.IsSpace(r); r = this._peekc() {
@@ -258,6 +259,30 @@ func (this *RuneLexer) fetch() (res *Token) {
 		return
 	}
 	if res = this.consume(",", ttComma); res != nil {
+		return
+	}
+	if res = this.consume("&&=", ttLogicAndAssign); res != nil {
+		return
+	}
+	if res = this.consume("&&", ttLogicAnd); res != nil {
+		return
+	}
+	if res = this.consume("&=", ttBitwiseAndAssign); res != nil {
+		return
+	}
+	if res = this.consume("&", ttBitwiseAnd); res != nil {
+		return
+	}
+	if res = this.consume("||=", ttLogicOrAssign); res != nil {
+		return
+	}
+	if res = this.consume("||", ttLogicOr); res != nil {
+		return
+	}
+	if res = this.consume("|=", ttBitwiseOrAssign); res != nil {
+		return
+	}
+	if res = this.consume("|", ttBitwiseOr); res != nil {
 		return
 	}
 	log.Panicf("unknown char %s\n", string(r))

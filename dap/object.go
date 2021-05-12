@@ -6,4 +6,5 @@ type Object interface {
 	Multi(Object) Object
 	Div(Object) Object
 	Assign(Object) Object
+	GT(Object) Object
 }

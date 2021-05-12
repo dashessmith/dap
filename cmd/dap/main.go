@@ -2,7 +2,6 @@ package main
 
 import (
 	"dap/dap"
-
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +17,7 @@ var runCmd = &cobra.Command{
 }
 
 func main() {
-	rootCmd.AddCommand(runCmd)
-	rootCmd.Execute()
+
+	//rootCmd.AddCommand(runCmd)
+	//rootCmd.Execute()
 }
