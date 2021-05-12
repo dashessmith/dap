@@ -10,11 +10,13 @@ func (this *Parser) parse() (
 	imports map[string]*Import,
 	classes map[string]*Class,
 	methods map[string]*Method,
+	functions map[string]*Function,
 	err error,
 ) {
 	imports = map[string]*Import{}
 	classes = map[string]*Class{}
 	methods = map[string]*Method{}
+	functions = map[string]*Function{}
 	for tok := this.peek(); tok.Typ != ttEOF; tok = this.peek() {
 		var imp *Import
 		imp, err = this.imprt()
@@ -43,6 +45,16 @@ func (this *Parser) parse() (
 		}
 		if mthd != nil {
 			methods[mthd.name] = mthd
+			continue
+		}
+
+		var f *Function
+		f, err = this.function()
+		if err != nil {
+			return
+		}
+		if f != nil {
+			functions[f.name] = f
 			continue
 		}
 		err = fmt.Errorf("unknown token %s", tok)
@@ -178,6 +190,47 @@ func (this *Parser) method() (res *Method, err error) {
 				args: args,
 				name: ftok.Val,
 			},
+		}
+		return true
+	})
+	return
+}
+
+func (this *Parser) function() (res *Function, err error) {
+	this.trans(func(p *Parser) bool {
+		ftok := p.get()
+		if ftok.Typ != ttSymbol {
+			return false
+		}
+		if tok := p.get(); tok.Typ != ttLeftParenthese {
+			return false
+		}
+		var args Args
+		args, err = p.args()
+		if err != nil {
+			return false
+		}
+		if tok := p.get(); tok.Typ != ttRightParenthese {
+			err = fmt.Errorf("missing )")
+			return false
+		}
+		if tok := p.get(); tok.Typ != ttLeftCurve {
+			err = fmt.Errorf("missing {")
+			return false
+		}
+		var exprs []Express
+		exprs, err = p.exprs()
+		if err != nil {
+			return false
+		}
+		if tok := p.get(); tok.Typ != ttRightCurve {
+			err = fmt.Errorf("missing }")
+			return false
+		}
+		res = &Function{
+			name:  ftok.Val,
+			args:  args,
+			exprs: exprs,
 		}
 		return true
 	})

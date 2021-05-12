@@ -53,29 +53,28 @@ func (this *RuneLexer) get() (res *Token) {
 }
 
 func (this *RuneLexer) getimpl() (res *Token) {
-	if len(this.toks) > this.tIdx {
-		res = this.toks[this.tIdx]
+	defer func() {
 		this.tIdx++
-		return
+	}()
+	for len(this.toks) <= this.tIdx {
+		tok := this.fetch()
+		this.toks = append(this.toks, tok)
 	}
-	tok := this.fetch()
-	this.toks = append(this.toks, tok)
-	this.tIdx++
-	return tok
+	return this.toks[this.tIdx]
 }
 
 func (this *RuneLexer) peek() (res *Token) {
-	for res = this.peekimpl(); res.Typ == ttBlank; res = this.get() {
+	for res = this.peekimpl(); res.Typ == ttBlank; res = this.peekimpl() {
+		this.tIdx++
 	}
 	return
 }
 func (this *RuneLexer) peekimpl() *Token {
-	if len(this.toks) > this.tIdx {
-		return this.toks[this.tIdx]
+	for len(this.toks) <= this.tIdx {
+		tok := this.fetch()
+		this.toks = append(this.toks, tok)
 	}
-	tok := this.fetch()
-	this.toks = append(this.toks, tok)
-	return tok
+	return this.toks[this.tIdx]
 }
 
 func (this *RuneLexer) _getc() rune {
@@ -156,8 +155,8 @@ func (this *RuneLexer) fetch() (res *Token) {
 		}
 	}
 	r := this._peekc()
-	runes := []rune{r}
 	if unicode.IsSpace(r) {
+		runes := []rune{}
 		for r := this._peekc(); unicode.IsSpace(r); r = this._peekc() {
 			this._getc()
 			runes = append(runes, r)
@@ -170,6 +169,7 @@ func (this *RuneLexer) fetch() (res *Token) {
 		}
 	}
 	if unicode.IsLetter(r) {
+		runes := []rune{}
 		for r = this._peekc(); unicode.IsLetter(r); r = this._peekc() {
 			this._getc()
 			runes = append(runes, r)
@@ -186,6 +186,7 @@ func (this *RuneLexer) fetch() (res *Token) {
 		}
 	}
 	if unicode.IsDigit(r) {
+		runes := []rune{}
 		for r = this._peekc(); unicode.IsLetter(r); r = this._peekc() {
 			this._getc()
 			runes = append(runes, r)
@@ -253,6 +254,9 @@ func (this *RuneLexer) fetch() (res *Token) {
 		return
 	}
 	if res = this.consume(".", ttDot); res != nil {
+		return
+	}
+	if res = this.consume(",", ttComma); res != nil {
 		return
 	}
 	log.Panicf("unknown char %s\n", string(r))

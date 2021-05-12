@@ -1,9 +1,15 @@
 package dap
 
+import "dap/utils"
+
 type Function struct {
 	name  string
 	args  Args
 	exprs []Express
+}
+
+func (this *Function) String() string {
+	return utils.JsonStr(this)
 }
 
 func (f *Function) Eval(s Scope) (res Object) {

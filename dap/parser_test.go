@@ -8,11 +8,17 @@ import (
 func Test_parser(t *testing.T) {
 	parser := Parser{
 		Lexer: &RuneLexer{
-			content: []rune(`fdsa {} `),
+			content: []rune(`fdsa {} foo(){} fdsa.xx(a, b){}`),
 		},
 	}
-	imports, classes, methods, err := parser.parse()
-	t.Logf("\n%v\n%v\n%v\n%v\n", imports, classes, methods, err)
+	imports, classes, methods, functions, err := parser.parse()
+	t.Logf(`
+	imports		%s
+	classes		%s
+	methods		%s
+	functions	%s
+	err 		%v
+	`, imports, classes, methods, functions, err)
 }
 
 func Test_x(t *testing.T) {
