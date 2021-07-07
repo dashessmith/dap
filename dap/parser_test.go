@@ -7,8 +7,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	log.Printf(`test main
-	`)
+	log.Printf(`test main`)
 	// profiler.Start(profiler.Config{
 	// 	ApplicationName: "simple.golang.app123",
 
@@ -28,25 +27,23 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+const testCode = ```
+student 
+	birth xx.string
+	score list
+	enter_date
+
+student.new() 
+	if this.birth > 100 
+	
+main() 
+```
+
 func Test_parser(t *testing.T) {
 
 	parser := Parser{
 		Lexer: &RuneLexer{
-			Content: []rune(`
-			student {
-				birth xx.string
-				score list
-				enter_date
-			 } 
-			 student.new(){ 
-				if this.birth > 100 {
-					
-				}
-			 } 
-			main(){
-				
-			}
-		`),
+			Content: []rune(testCode),
 		},
 	}
 	imports, classes, methods, functions, err := parser.Parse()
