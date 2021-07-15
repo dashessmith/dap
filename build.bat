@@ -1,3 +1,4 @@
-go mod tidy
+go mod tidy || exit
 @rem gofmt -s -w .
-go build -o  . ./cmd/dap
+gofumpt -l -s -w . || exit
+go build -o  . ./cmd/... || exit

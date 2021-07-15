@@ -64,6 +64,7 @@ func (this *RuneLexer) getimpl() (res *Token) {
 func (this *RuneLexer) peek() (res *Token) {
 	return this.peekimpl()
 }
+
 func (this *RuneLexer) peekimpl() *Token {
 	for len(this.toks) <= this.tIdx {
 		tok := this.fetch()
@@ -122,7 +123,6 @@ func (this *RuneLexer) _trans(f func(tx *RuneLexer) bool) {
 }
 
 func (this *RuneLexer) consume(str string, typ TokenType) (res *Token) {
-
 	this._trans(func(tx *RuneLexer) bool {
 		var runes []rune
 		for r := tx._getc(); r != 0; r = tx._getc() {

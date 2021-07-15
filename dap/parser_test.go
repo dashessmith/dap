@@ -27,20 +27,18 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-const testCode = ```
+const testCode = `
 student 
 	birth xx.string
 	score list
 	enter_date
 
 student.new() 
-	if this.birth > 100 
+	if this.birth > 100
 	
-main() 
-```
+`
 
 func Test_parser(t *testing.T) {
-
 	parser := Parser{
 		Lexer: &RuneLexer{
 			Content: []rune(testCode),
@@ -48,7 +46,6 @@ func Test_parser(t *testing.T) {
 	}
 	imports, classes, methods, functions, err := parser.Parse()
 	t.Logf(`
-	imports		%s
 	classes		%s
 	methods		%s
 	functions	%s
