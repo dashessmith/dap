@@ -7,6 +7,6 @@ type Import struct {
 	Path string `json:"path"`
 }
 
-func (this *Import) String() string {
-	return utils.JsonStr(this)
+func (i *Import) String() string {
+	return utils.JsonStr(i)
 }

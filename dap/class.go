@@ -8,8 +8,8 @@ type Class struct {
 	// Methods map[string]*Method
 }
 
-func (this *Class) String() string {
-	return utils.JsonStr(this)
+func (cls *Class) String() string {
+	return utils.JsonStr(cls)
 }
 
 type Method struct {
@@ -17,8 +17,8 @@ type Method struct {
 	Function
 }
 
-func (this *Method) String() string {
-	return utils.JsonStr(this)
+func (cls *Method) String() string {
+	return utils.JsonStr(cls)
 }
 
 type Field struct {
@@ -26,8 +26,8 @@ type Field struct {
 	Class *ClassRef
 }
 
-func (this *Field) String() string {
-	return utils.JsonStr(this)
+func (cls *Field) String() string {
+	return utils.JsonStr(cls)
 }
 
 func (m *Method) Eval(s Scope) Object {

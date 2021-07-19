@@ -39,7 +39,14 @@ student.new() {
 		1 + 1
 	}
 } 
+
+main() {
+}
 `
+
+type MainScope struct{}
+
+func (ms *MainScope) pushTempObject(Object) {}
 
 func Test_parser(t *testing.T) {
 	parser := Parser{
@@ -55,6 +62,9 @@ func Test_parser(t *testing.T) {
 	functions	%s
 	err 		%v
 	`, imports, classes, methods, functions, err)
+
+	ms := MainScope{}
+	(*functions[`main`]).Eval(&ms)
 }
 
 func Test_x(t *testing.T) {
