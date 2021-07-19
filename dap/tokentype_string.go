@@ -42,11 +42,19 @@ func _() {
 	_ = x[ttSub-31]
 	_ = x[ttMulti-32]
 	_ = x[ttDiv-33]
+	_ = x[ttLogicOr-34]
+	_ = x[ttLogicAnd-35]
+	_ = x[ttLogicOrAssign-36]
+	_ = x[ttLogicAndAssign-37]
+	_ = x[ttBitwiseOr-38]
+	_ = x[ttBitwiseAnd-39]
+	_ = x[ttBitwiseOrAssign-40]
+	_ = x[ttBitwiseAndAssign-41]
 }
 
-const _TokenType_name = "ttEOFttBlankttSymbolttImportttConstStringttConstNumberttLeftParenthesettRightParenthesettLeftBracketttRigthBracketttLeftCurvettRightCurvettLineEndttDotttCommattVarttAssignttEqualttGTttShiftRightttGTEttNotttNotEqualttLTttLTEttReturnttIfttElsettSemittAddttAddAddttSubttMultittDiv"
+const _TokenType_name = "ttEOFttBlankttSymbolttImportttConstStringttConstNumberttLeftParenthesettRightParenthesettLeftBracketttRigthBracketttLeftCurvettRightCurvettLineEndttDotttCommattVarttAssignttEqualttGTttShiftRightttGTEttNotttNotEqualttLTttLTEttReturnttIfttElsettSemittAddttAddAddttSubttMultittDivttLogicOrttLogicAndttLogicOrAssignttLogicAndAssignttBitwiseOrttBitwiseAndttBitwiseOrAssignttBitwiseAndAssign"
 
-var _TokenType_index = [...]uint16{0, 5, 12, 20, 28, 41, 54, 70, 87, 100, 114, 125, 137, 146, 151, 158, 163, 171, 178, 182, 194, 199, 204, 214, 218, 223, 231, 235, 241, 247, 252, 260, 265, 272, 277}
+var _TokenType_index = [...]uint16{0, 5, 12, 20, 28, 41, 54, 70, 87, 100, 114, 125, 137, 146, 151, 158, 163, 171, 178, 182, 194, 199, 204, 214, 218, 223, 231, 235, 241, 247, 252, 260, 265, 272, 277, 286, 296, 311, 327, 338, 350, 367, 385}
 
 func (i TokenType) String() string {
 	if i < 0 || i >= TokenType(len(_TokenType_index)-1) {

@@ -52,8 +52,8 @@ const (
 	ttBitwiseAndAssign
 )
 
-func (this TokenType) MarshalJSON() (bs []byte, err error) {
-	bs = []byte(`"` + this.String() + `"`)
+func (tt TokenType) MarshalJSON() (bs []byte, err error) {
+	bs = []byte(`"` + tt.String() + `"`)
 	return
 }
 
@@ -64,6 +64,6 @@ type Token struct {
 	Val  string    `json:"val"`
 }
 
-func (this *Token) String() string {
-	return utils.JsonStr(this)
+func (tt *Token) String() string {
+	return utils.JsonStr(tt)
 }

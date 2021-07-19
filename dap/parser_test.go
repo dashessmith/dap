@@ -28,14 +28,16 @@ func TestMain(m *testing.M) {
 }
 
 const testCode = `
-student 
+student {
 	birth xx.string
 	score list
 	enter_date
+} 
 
-student.new() 
-	if this.birth > 100
-	
+student.new() {
+	if this.birth > 100 {
+	}
+} 
 `
 
 func Test_parser(t *testing.T) {
@@ -46,6 +48,7 @@ func Test_parser(t *testing.T) {
 	}
 	imports, classes, methods, functions, err := parser.Parse()
 	t.Logf(`
+	imports     %s
 	classes		%s
 	methods		%s
 	functions	%s

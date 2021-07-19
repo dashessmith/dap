@@ -8,7 +8,7 @@ type Parser struct {
 	Lexer
 }
 
-func (this *Parser) Parse() (
+func (p *Parser) Parse() (
 	imports map[string]*Import,
 	classes map[string]*Class,
 	methods map[string]*Method,
@@ -20,9 +20,9 @@ func (this *Parser) Parse() (
 	methods = map[string]*Method{}
 	functions = map[string]*Function{}
 
-	for tok := this.peek(); tok.Typ != ttEOF; tok = this.peek() {
+	for tok := p.peek(); tok.Typ != ttEOF; tok = p.peek() {
 		var imp *Import
-		imp, err = this.imprt()
+		imp, err = p.imprt()
 		if err != nil {
 			return
 		}
@@ -32,7 +32,7 @@ func (this *Parser) Parse() (
 		}
 
 		var cls *Class
-		cls, err = this.class()
+		cls, err = p.class()
 		if err != nil {
 			return
 		}
@@ -42,7 +42,7 @@ func (this *Parser) Parse() (
 		}
 
 		var mthd *Method
-		mthd, err = this.method()
+		mthd, err = p.method()
 		if err != nil {
 			return
 		}
@@ -52,7 +52,7 @@ func (this *Parser) Parse() (
 		}
 
 		var f *Function
-		f, err = this.function()
+		f, err = p.function()
 		if err != nil {
 			return
 		}
@@ -66,20 +66,20 @@ func (this *Parser) Parse() (
 	return
 }
 
-func (this *Parser) trans(f func(p *Parser) bool) {
-	backup := this.Lexer
+func (p *Parser) trans(f func(p *Parser) bool) {
+	backup := p.Lexer
 	defer func() {
-		this.Lexer = backup
+		p.Lexer = backup
 	}()
-	this.Lexer = this.begin()
-	defer this.done()
-	if f(this) {
-		this.commit()
+	p.Lexer = p.begin()
+	defer p.done()
+	if f(p) {
+		p.commit()
 	}
 }
 
-func (this *Parser) get() (tok *Token) {
-	for tok = this.Lexer.get(); ; tok = this.Lexer.get() {
+func (p *Parser) get() (tok *Token) {
+	for tok = p.Lexer.get(); ; tok = p.Lexer.get() {
 		if tok.Typ == ttBlank {
 			continue
 		}
@@ -91,8 +91,8 @@ func (this *Parser) get() (tok *Token) {
 	return
 }
 
-func (this *Parser) getex(linend bool) (tok *Token) {
-	for tok = this.Lexer.get(); ; tok = this.Lexer.get() {
+func (p *Parser) getex(linend bool) (tok *Token) {
+	for tok = p.Lexer.get(); ; tok = p.Lexer.get() {
 		if tok.Typ == ttBlank {
 			continue
 		}
@@ -104,8 +104,8 @@ func (this *Parser) getex(linend bool) (tok *Token) {
 	return
 }
 
-func (this *Parser) peekex(linend bool) (tok *Token) {
-	for tok = this.Lexer.peek(); ; _, tok = this.Lexer.get(), this.Lexer.peek() {
+func (p *Parser) peekex(linend bool) (tok *Token) {
+	for tok = p.Lexer.peek(); ; _, tok = p.Lexer.get(), p.Lexer.peek() {
 		if tok.Typ == ttBlank {
 			continue
 		}
@@ -117,8 +117,8 @@ func (this *Parser) peekex(linend bool) (tok *Token) {
 	return
 }
 
-func (this *Parser) peek() (tok *Token) {
-	for tok = this.Lexer.peek(); ; _, tok = this.Lexer.get(), this.Lexer.peek() {
+func (p *Parser) peek() (tok *Token) {
+	for tok = p.Lexer.peek(); ; _, tok = p.Lexer.get(), p.Lexer.peek() {
 		if tok.Typ == ttBlank {
 			continue
 		}
@@ -130,8 +130,8 @@ func (this *Parser) peek() (tok *Token) {
 	return
 }
 
-func (this *Parser) classRef() (res *ClassRef, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) classRef() (res *ClassRef, err error) {
+	p.trans(func(p *Parser) bool {
 		tok1 := p.getex(true)
 		if tok1.Typ != ttSymbol {
 			return false
@@ -156,8 +156,8 @@ func (this *Parser) classRef() (res *ClassRef, err error) {
 	return
 }
 
-func (this *Parser) arg() (res *Arg, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) arg() (res *Arg, err error) {
+	p.trans(func(p *Parser) bool {
 		ntok := p.get()
 		if ntok.Typ != ttSymbol {
 			return false
@@ -176,8 +176,8 @@ func (this *Parser) arg() (res *Arg, err error) {
 	return
 }
 
-func (this *Parser) args() (res Args, err error) {
-	this.trans(func(p *Parser) (ok bool) {
+func (p *Parser) args() (res Args, err error) {
+	p.trans(func(p *Parser) (ok bool) {
 		defer func() {
 			if ok && res == nil {
 				res = Args{}
@@ -211,8 +211,8 @@ func (this *Parser) args() (res Args, err error) {
 	return
 }
 
-func (this *Parser) argsWithParenthese() (res Args, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) argsWithParenthese() (res Args, err error) {
+	p.trans(func(p *Parser) bool {
 		if tok := p.get(); tok.Typ != ttLeftParenthese {
 			return false
 		}
@@ -229,8 +229,8 @@ func (this *Parser) argsWithParenthese() (res Args, err error) {
 	return
 }
 
-func (this *Parser) method() (res *Method, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) method() (res *Method, err error) {
+	p.trans(func(p *Parser) bool {
 		ctok := p.get()
 		if ctok.Typ != ttSymbol {
 			return false
@@ -282,8 +282,8 @@ func (this *Parser) method() (res *Method, err error) {
 	return
 }
 
-func (this *Parser) function() (res *Function, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) function() (res *Function, err error) {
+	p.trans(func(p *Parser) bool {
 		ftok := p.get()
 		if ftok.Typ != ttSymbol {
 			return false
@@ -323,8 +323,8 @@ func (this *Parser) function() (res *Function, err error) {
 	return
 }
 
-func (this *Parser) imprt() (res *Import, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) imprt() (res *Import, err error) {
+	p.trans(func(p *Parser) bool {
 		tok := p.get()
 		if tok.Typ != ttImport {
 			return false
@@ -341,8 +341,8 @@ func (this *Parser) imprt() (res *Import, err error) {
 	return
 }
 
-func (this *Parser) class() (c *Class, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) class() (c *Class, err error) {
+	p.trans(func(p *Parser) bool {
 		nametok := p.get()
 		if nametok.Typ != ttSymbol {
 			return false
@@ -370,8 +370,8 @@ func (this *Parser) class() (c *Class, err error) {
 	return
 }
 
-func (this *Parser) classField() (f *Field, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) classField() (f *Field, err error) {
+	p.trans(func(p *Parser) bool {
 		tok1 := p.getex(false)
 		if tok1.Typ != ttSymbol {
 			return false
@@ -390,9 +390,9 @@ func (this *Parser) classField() (f *Field, err error) {
 	return
 }
 
-func (this *Parser) classBody() (fields map[string]*Field, err error) {
+func (p *Parser) classBody() (fields map[string]*Field, err error) {
 	fields = map[string]*Field{}
-	this.trans(func(p *Parser) bool {
+	p.trans(func(p *Parser) bool {
 		for tok := p.peek(); tok.Typ != ttRightCurve; tok = p.peek() {
 			var f *Field
 			f, err = p.classField()
@@ -409,10 +409,10 @@ func (this *Parser) classBody() (fields map[string]*Field, err error) {
 	return
 }
 
-func (this *Parser) exprs(priority int) (res []Express, err error) {
+func (p *Parser) exprs(priority int) (res []Express, err error) {
 	for {
 		var expr Express
-		expr, err = this.expr(priority)
+		expr, err = p.expr(priority)
 		if expr == nil || err != nil {
 			return
 		}
@@ -420,8 +420,8 @@ func (this *Parser) exprs(priority int) (res []Express, err error) {
 	}
 }
 
-func (this *Parser) lambda(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) lambda(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		var args Args
 		args, err = p.argsWithParenthese()
 		if err != nil {
@@ -460,8 +460,8 @@ func (this *Parser) lambda(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) define(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) define(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		if tok := p.get(); tok.Typ != ttVar {
 			return false
 		}
@@ -484,8 +484,8 @@ func (this *Parser) define(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) ref(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) ref(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		names := []string{}
 		tok := p.get()
 		if tok.Typ != ttSymbol {
@@ -512,8 +512,8 @@ func (this *Parser) ref(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) defineOrRefOrReturn(priority int) (define Express, ref Express, ret *Token, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) defineOrRefOrReturn(priority int) (define Express, ref Express, ret *Token, err error) {
+	p.trans(func(p *Parser) bool {
 		define, err = p.define(priority)
 		if err != nil {
 			return false
@@ -537,8 +537,8 @@ func (this *Parser) defineOrRefOrReturn(priority int) (define Express, ref Expre
 	return
 }
 
-func (this *Parser) assign(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) assign(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		target := ExprAssignTarget{}
 		for {
 			var d Express
@@ -581,8 +581,8 @@ func (this *Parser) assign(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) ifexpr(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) ifexpr(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		priority++
 		if tok := p.get(); tok.Typ != ttIf {
 			return false
@@ -692,8 +692,8 @@ func (this *Parser) ifexpr(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) expradd(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) expradd(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		var first, second Express
 		first, err = p.expr(priority + 1)
 		if err != nil {
@@ -721,8 +721,8 @@ func (this *Parser) expradd(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) exprsub(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) exprsub(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		var first, second Express
 		first, err = p.expr(priority + 1)
 		if err != nil {
@@ -750,8 +750,8 @@ func (this *Parser) exprsub(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) exprmulti(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) exprmulti(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		var first, second Express
 		first, err = p.expr(priority + 1)
 		if err != nil {
@@ -779,8 +779,8 @@ func (this *Parser) exprmulti(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) exprdiv(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) exprdiv(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		var first, second Express
 		first, err = p.expr(priority + 1)
 		if err != nil {
@@ -808,8 +808,8 @@ func (this *Parser) exprdiv(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) instnum(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) instnum(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		tok := p.get()
 		if tok.Typ != ttConstNumber {
 			return false
@@ -845,8 +845,8 @@ func init() {
 	}
 }
 
-func (this *Parser) exprCmp(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) exprCmp(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		var expr1 Express
 		expr1, err = p.expr(priority + 1)
 		if err != nil {
@@ -872,8 +872,8 @@ func (this *Parser) exprCmp(priority int) (res Express, err error) {
 	return
 }
 
-func (this *Parser) expr(priority int) (res Express, err error) {
-	this.trans(func(p *Parser) bool {
+func (p *Parser) expr(priority int) (res Express, err error) {
+	p.trans(func(p *Parser) bool {
 		for _, pf := range _exprfuncs {
 			if pf.pri < priority {
 				continue
