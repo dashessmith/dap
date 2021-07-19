@@ -25,105 +25,105 @@ type RuneLexer struct {
 	_hasCommited bool
 }
 
-func (this *RuneLexer) begin() Lexer {
+func (rl *RuneLexer) begin() Lexer {
 	ret := &RuneLexer{}
-	*ret = *this
-	ret.emitor = this
+	*ret = *rl
+	ret.emitor = rl
 	return ret
 }
 
-func (this *RuneLexer) commit() {
-	this.hasCommited = true
+func (rl *RuneLexer) commit() {
+	rl.hasCommited = true
 }
 
-func (this *RuneLexer) done() {
-	this.emitor.toks = this.toks
-	this.emitor.cIdx = this.cIdx
-	if this.hasCommited {
-		this.emitor.tIdx = this.tIdx
-		this.emitor.line = this.line
-		this.emitor.col = this.col
+func (rl *RuneLexer) done() {
+	rl.emitor.toks = rl.toks
+	rl.emitor.cIdx = rl.cIdx
+	if rl.hasCommited {
+		rl.emitor.tIdx = rl.tIdx
+		rl.emitor.line = rl.line
+		rl.emitor.col = rl.col
 	}
 }
 
-func (this *RuneLexer) get() (res *Token) {
-	return this.getimpl()
+func (rl *RuneLexer) get() (res *Token) {
+	return rl.getimpl()
 }
 
-func (this *RuneLexer) getimpl() (res *Token) {
+func (rl *RuneLexer) getimpl() (res *Token) {
 	defer func() {
-		this.tIdx++
+		rl.tIdx++
 	}()
-	for len(this.toks) <= this.tIdx {
-		tok := this.fetch()
-		this.toks = append(this.toks, tok)
+	for len(rl.toks) <= rl.tIdx {
+		tok := rl.fetch()
+		rl.toks = append(rl.toks, tok)
 	}
-	return this.toks[this.tIdx]
+	return rl.toks[rl.tIdx]
 }
 
-func (this *RuneLexer) peek() (res *Token) {
-	return this.peekimpl()
+func (rl *RuneLexer) peek() (res *Token) {
+	return rl.peekimpl()
 }
 
-func (this *RuneLexer) peekimpl() *Token {
-	for len(this.toks) <= this.tIdx {
-		tok := this.fetch()
-		this.toks = append(this.toks, tok)
+func (rl *RuneLexer) peekimpl() *Token {
+	for len(rl.toks) <= rl.tIdx {
+		tok := rl.fetch()
+		rl.toks = append(rl.toks, tok)
 	}
-	return this.toks[this.tIdx]
+	return rl.toks[rl.tIdx]
 }
 
-func (this *RuneLexer) _getc() rune {
-	if this.cIdx >= len(this.Content) {
+func (rl *RuneLexer) _getc() rune {
+	if rl.cIdx >= len(rl.Content) {
 		return 0
 	}
-	r := this.Content[this.cIdx]
-	this.cIdx++
+	r := rl.Content[rl.cIdx]
+	rl.cIdx++
 	return r
 }
 
-func (this *RuneLexer) _peekc() rune {
-	if this.cIdx >= len(this.Content) {
+func (rl *RuneLexer) _peekc() rune {
+	if rl.cIdx >= len(rl.Content) {
 		return 0
 	}
-	return this.Content[this.cIdx]
+	return rl.Content[rl.cIdx]
 }
 
-func (this *RuneLexer) _begin() *RuneLexer {
+func (rl *RuneLexer) _begin() *RuneLexer {
 	return &RuneLexer{
-		emitor:  this,
-		toks:    this.toks,
-		tIdx:    this.tIdx,
-		line:    this.line,
-		col:     this.col,
-		Content: this.Content,
-		cIdx:    this.cIdx,
+		emitor:  rl,
+		toks:    rl.toks,
+		tIdx:    rl.tIdx,
+		line:    rl.line,
+		col:     rl.col,
+		Content: rl.Content,
+		cIdx:    rl.cIdx,
 	}
 }
 
-func (this *RuneLexer) _done() {
-	if this._hasCommited {
-		this.emitor.cIdx = this.cIdx
-		this.emitor.toks = this.toks
-		this.emitor.line = this.line
-		this.emitor.col = this.col
+func (rl *RuneLexer) _done() {
+	if rl._hasCommited {
+		rl.emitor.cIdx = rl.cIdx
+		rl.emitor.toks = rl.toks
+		rl.emitor.line = rl.line
+		rl.emitor.col = rl.col
 	}
 }
 
-func (this *RuneLexer) _commit() {
-	this._hasCommited = true
+func (rl *RuneLexer) _commit() {
+	rl._hasCommited = true
 }
 
-func (this *RuneLexer) _trans(f func(tx *RuneLexer) bool) {
-	tx := this._begin()
+func (rl *RuneLexer) _trans(f func(tx *RuneLexer) bool) {
+	tx := rl._begin()
 	defer tx._done()
 	if f(tx) {
 		tx._commit()
 	}
 }
 
-func (this *RuneLexer) consume(str string, typ TokenType) (res *Token) {
-	this._trans(func(tx *RuneLexer) bool {
+func (rl *RuneLexer) consume(str string, typ TokenType) (res *Token) {
+	rl._trans(func(tx *RuneLexer) bool {
 		var runes []rune
 		for r := tx._getc(); r != 0; r = tx._getc() {
 			runes = append(runes, r)
@@ -143,23 +143,23 @@ func (this *RuneLexer) consume(str string, typ TokenType) (res *Token) {
 	return
 }
 
-func (this *RuneLexer) fetch() (res *Token) {
-	if this.cIdx >= len(this.Content) {
+func (rl *RuneLexer) fetch() (res *Token) {
+	if rl.cIdx >= len(rl.Content) {
 		return &Token{
 			Typ: ttEOF,
 		}
 	}
-	r := this._peekc()
+	r := rl._peekc()
 	if r == '\n' {
-		this._getc()
+		rl._getc()
 		return &Token{
 			Typ: ttLineEnd,
 		}
 	}
 	if unicode.IsSpace(r) {
 		runes := []rune{}
-		for r := this._peekc(); unicode.IsSpace(r); r = this._peekc() {
-			this._getc()
+		for r := rl._peekc(); unicode.IsSpace(r); r = rl._peekc() {
+			rl._getc()
 			runes = append(runes, r)
 		}
 		return &Token{
@@ -171,9 +171,9 @@ func (this *RuneLexer) fetch() (res *Token) {
 	}
 	if unicode.IsLetter(r) || r == '_' {
 		runes := []rune{r}
-		this._getc()
-		for r = this._peekc(); unicode.IsLetter(r) || r == '_' || unicode.IsDigit(r); r = this._peekc() {
-			this._getc()
+		rl._getc()
+		for r = rl._peekc(); unicode.IsLetter(r) || r == '_' || unicode.IsDigit(r); r = rl._peekc() {
+			rl._getc()
 			runes = append(runes, r)
 		}
 		switch str := string(runes); str {
@@ -189,8 +189,8 @@ func (this *RuneLexer) fetch() (res *Token) {
 	}
 	if unicode.IsDigit(r) {
 		runes := []rune{}
-		for r = this._peekc(); unicode.IsDigit(r); r = this._peekc() {
-			this._getc()
+		for r = rl._peekc(); unicode.IsDigit(r); r = rl._peekc() {
+			rl._getc()
 			runes = append(runes, r)
 		}
 		return &Token{
@@ -198,91 +198,91 @@ func (this *RuneLexer) fetch() (res *Token) {
 			Val: string(runes),
 		}
 	}
-	if res = this.consume(">=", ttGTE); res != nil {
+	if res = rl.consume(">=", ttGTE); res != nil {
 		return
 	}
-	if res = this.consume(">>", ttShiftRight); res != nil {
+	if res = rl.consume(">>", ttShiftRight); res != nil {
 		return
 	}
-	if res = this.consume(">", ttGT); res != nil {
+	if res = rl.consume(">", ttGT); res != nil {
 		return
 	}
-	if res = this.consume("==", ttEqual); res != nil {
+	if res = rl.consume("==", ttEqual); res != nil {
 		return
 	}
-	if res = this.consume("++", ttAddAdd); res != nil {
+	if res = rl.consume("++", ttAddAdd); res != nil {
 		return
 	}
-	if res = this.consume("+", ttAdd); res != nil {
+	if res = rl.consume("+", ttAdd); res != nil {
 		return
 	}
-	if res = this.consume("-", ttSub); res != nil {
+	if res = rl.consume("-", ttSub); res != nil {
 		return
 	}
-	if res = this.consume("*", ttMulti); res != nil {
+	if res = rl.consume("*", ttMulti); res != nil {
 		return
 	}
-	if res = this.consume("/", ttDiv); res != nil {
+	if res = rl.consume("/", ttDiv); res != nil {
 		return
 	}
-	if res = this.consume("(", ttLeftParenthese); res != nil {
+	if res = rl.consume("(", ttLeftParenthese); res != nil {
 		return
 	}
-	if res = this.consume(")", ttRightParenthese); res != nil {
+	if res = rl.consume(")", ttRightParenthese); res != nil {
 		return
 	}
-	if res = this.consume("[", ttLeftBracket); res != nil {
+	if res = rl.consume("[", ttLeftBracket); res != nil {
 		return
 	}
-	if res = this.consume("]", ttRigthBracket); res != nil {
+	if res = rl.consume("]", ttRigthBracket); res != nil {
 		return
 	}
-	if res = this.consume("{", ttLeftCurve); res != nil {
+	if res = rl.consume("{", ttLeftCurve); res != nil {
 		return
 	}
-	if res = this.consume("}", ttRightCurve); res != nil {
+	if res = rl.consume("}", ttRightCurve); res != nil {
 		return
 	}
-	if res = this.consume("==", ttEqual); res != nil {
+	if res = rl.consume("==", ttEqual); res != nil {
 		return
 	}
-	if res = this.consume("=", ttAssign); res != nil {
+	if res = rl.consume("=", ttAssign); res != nil {
 		return
 	}
-	if res = this.consume("!=", ttNotEqual); res != nil {
+	if res = rl.consume("!=", ttNotEqual); res != nil {
 		return
 	}
-	if res = this.consume("!", ttNot); res != nil {
+	if res = rl.consume("!", ttNot); res != nil {
 		return
 	}
-	if res = this.consume(".", ttDot); res != nil {
+	if res = rl.consume(".", ttDot); res != nil {
 		return
 	}
-	if res = this.consume(",", ttComma); res != nil {
+	if res = rl.consume(",", ttComma); res != nil {
 		return
 	}
-	if res = this.consume("&&=", ttLogicAndAssign); res != nil {
+	if res = rl.consume("&&=", ttLogicAndAssign); res != nil {
 		return
 	}
-	if res = this.consume("&&", ttLogicAnd); res != nil {
+	if res = rl.consume("&&", ttLogicAnd); res != nil {
 		return
 	}
-	if res = this.consume("&=", ttBitwiseAndAssign); res != nil {
+	if res = rl.consume("&=", ttBitwiseAndAssign); res != nil {
 		return
 	}
-	if res = this.consume("&", ttBitwiseAnd); res != nil {
+	if res = rl.consume("&", ttBitwiseAnd); res != nil {
 		return
 	}
-	if res = this.consume("||=", ttLogicOrAssign); res != nil {
+	if res = rl.consume("||=", ttLogicOrAssign); res != nil {
 		return
 	}
-	if res = this.consume("||", ttLogicOr); res != nil {
+	if res = rl.consume("||", ttLogicOr); res != nil {
 		return
 	}
-	if res = this.consume("|=", ttBitwiseOrAssign); res != nil {
+	if res = rl.consume("|=", ttBitwiseOrAssign); res != nil {
 		return
 	}
-	if res = this.consume("|", ttBitwiseOr); res != nil {
+	if res = rl.consume("|", ttBitwiseOr); res != nil {
 		return
 	}
 	log.Panicf("unknown char %s\n", string(r))

@@ -8,8 +8,8 @@ type Function struct {
 	Exprs []Express
 }
 
-func (this *Function) String() string {
-	return utils.JsonStr(this)
+func (f *Function) String() string {
+	return utils.JsonStr(f)
 }
 
 func (f *Function) Eval(s Scope) (res Object) {

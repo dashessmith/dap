@@ -9,47 +9,48 @@ type TokenType int
 
 const (
 	ttEOF TokenType = iota
-	ttBlank
-	ttSymbol
-	ttImport
-	ttConstString
-	ttConstNumber
-	ttLeftParenthese
-	ttRightParenthese
-	ttLeftBracket
-	ttRigthBracket
-	ttLeftCurve
-	ttRightCurve
-	ttLineEnd
-	ttDot
-	ttComma
-	ttVar
-	ttAssign
-	ttEqual
-	ttGT
-	ttShiftRight
-	ttGTE
-	ttNot
-	ttNotEqual
-	ttLT
-	ttLTE
-	ttReturn
-	ttIf
-	ttElse
-	ttSemi
 	ttAdd
 	ttAddAdd
-	ttSub
-	ttMulti
-	ttDiv
-	ttLogicOr
-	ttLogicAnd
-	ttLogicOrAssign
-	ttLogicAndAssign
-	ttBitwiseOr
+	ttAssign
 	ttBitwiseAnd
-	ttBitwiseOrAssign
 	ttBitwiseAndAssign
+	ttBitwiseOr
+	ttBitwiseOrAssign
+	ttBlank
+	ttComma
+	ttConstNumber
+	ttConstString
+	ttDiv
+	ttDot
+	ttElse
+	ttEqual
+	ttGT
+	ttGTE
+	ttIf
+	ttImport
+	ttLeftBracket
+	ttLeftCurve
+	ttLeftParenthese
+	ttLineEnd
+	ttLogicAnd
+	ttLogicAndAssign
+	ttLogicOr
+	ttLogicOrAssign
+	ttLT
+	ttLTE
+	ttMulti
+	ttNot
+	ttNotEqual
+	ttReturn
+	ttRightCurve
+	ttRightParenthese
+	ttRigthBracket
+	ttSemi
+	ttShiftRight
+	ttSub
+	ttSymbol
+	ttThis
+	ttVar
 )
 
 func (tt TokenType) MarshalJSON() (bs []byte, err error) {

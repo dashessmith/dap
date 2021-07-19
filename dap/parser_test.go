@@ -36,6 +36,7 @@ student {
 
 student.new() {
 	if this.birth > 100 {
+		1 + 1
 	}
 } 
 `
